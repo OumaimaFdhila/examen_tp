@@ -5,8 +5,10 @@ declare module "next-auth" {
     user: {
       id: number
       role: null | "user" | "admin"
-      firstName: string | null
-      lastName: string | null
+      first_name: string | null
+      last_name: string | null
+      email: string | null
+      phone_number: string | null
       supabase_token: string
       supabase_token_2: string
     } & DefaultSession["user"]

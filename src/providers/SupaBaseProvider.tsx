@@ -24,13 +24,13 @@ export default function SupaBaseProvider({
             {
                 global: {
                     headers: {
-                        Authorization: `Bearer ${session.user.supabase_token}`
+                        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`
                     }
                 }
             }
         )
-        client.realtime.setAuth(session.user.supabase_token,)
-        client.functions.setAuth(session.user.supabase_token)
+        client.realtime.setAuth(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+        client.functions.setAuth(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
         
         setSupabase(client)
     },[session, supabase])

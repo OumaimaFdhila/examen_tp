@@ -35,7 +35,6 @@ export async function AddUser({
           image :image
         }
       );
-      console.log(response.data)
       return response.data; 
     } catch (error) {
       console.error("Error adding user:", error);
@@ -77,3 +76,29 @@ export async function get_user_by_id(id : string) {
     throw error; 
 }}
 
+export async function delete_user(id : string) {
+  try {
+    const response = await axios.delete(`https://nearby-prompt-buzzard.ngrok-free.app/delete_user/${Number(id)}`);
+    console.log(response.data)
+    return response.data; 
+} catch (error) {
+    console.error("Error detecting user:", error);
+    throw error; 
+}}
+
+export async function edit_user({id, first_name, last_name, role, email, phone_number }: { first_name: string; last_name: string; role: string; email: string; phone_number: string ,id : number}) {
+  try {
+    console.log(id, first_name, last_name, role, email, phone_number)
+    const response = await axios.put(`https://nearby-prompt-buzzard.ngrok-free.app/edit_user/${Number(id)}`,{
+        first_name: first_name,
+        last_name: last_name,
+        role: role,
+        email: email,
+        phone_number: phone_number
+    });
+    console.log(response.data)
+    return response.data; 
+} catch (error) {
+    console.error("Error detecting user:", error);
+    throw error; 
+}}

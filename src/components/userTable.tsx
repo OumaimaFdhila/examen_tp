@@ -20,10 +20,14 @@ import {
   Spinner,
 } from "@nextui-org/react";
 import {User as user } from "@/types/types";
+import { FiEdit3 } from "react-icons/fi";
 import AddModal from "./addModal";
-import { getUsers } from "@/actions/image.actions";
+import { delete_user, getUsers } from "@/actions/image.actions";
 import { useOnlineUsers } from "@/providers/onlineUserProvider";
 import { useSession } from "next-auth/react";
+import { MdDelete } from "react-icons/md";
+import { toast } from "react-toastify";
+import EditModal from "./editModal";
 
 export function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
@@ -36,11 +40,13 @@ export const columns = [
   {name: "USER", uid: "name", sortable: true},
   {name: "ROLE", uid: "role", sortable: true},
   {name: "EMAIL", uid: "email"},
+  {name: "PHONE NUMBER", uid: "phone_number"},
   {name: "COME TO WORK", uid: "status", sortable: true}, // jai wela majech
+  {name:"ACTION",uid:"action"}
 ];
 
 
-const INITIAL_VISIBLE_COLUMNS = ["id","name","email", "role", "status", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["id","name","phone_number","email", "role", "status", "action"];
 
 export const statusOptions = [
   {name: "YES", uid: "yes"},
@@ -57,6 +63,7 @@ export default function UserTable() {
   );
   const [users, setUsers] = useState<user[]>([])
   const {isOpen: isOpen2, onOpen: onOpen2, onOpenChange: onOpenChange2} = useDisclosure();
+  const {isOpen: isOpen, onOpen: onOpen, onOpenChange: onOpenChange} = useDisclosure();
   const [statusFilter, setStatusFilter] = useState<Selection>("all");
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -66,8 +73,19 @@ export default function UserTable() {
     column: "id",
     direction: "ascending",
   });
+  const [id,setId] = useState(0)
 
   console.log("onlineUsers",onlineUsers)
+
+  const Delete =useCallback( async (id : number) => {
+    await delete_user(id.toString()).then((res) => {
+      setUsers(users.filter((user) => user.id !== id));
+      toast.success("User deleted successfully");
+    }).catch((err) => {
+      console.log(err);
+      toast.error("Error deleting user");
+    })
+  },[users])
 
 
   useEffect( () => {
@@ -107,13 +125,13 @@ export default function UserTable() {
     }
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
       filteredUsers = filteredUsers.filter((user) =>
-        Array.from(statusFilter).includes(user.status || ""),
+        Array.from(statusFilter).includes(onlineUsers.filter((u) => u.id === user.id)[0]?.online_at ? "yes" : "no" ),
       );
     }
 
 
     return filteredUsers;
-  }, [users, hasSearchFilter, statusFilter, filterValue]);
+  }, [users, hasSearchFilter, statusFilter, filterValue, onlineUsers]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -150,20 +168,36 @@ export default function UserTable() {
             <p className="text-bold text-small capitalize">{user.role}</p>
           </div>
         );
+        case "phone_number":
+        return (
+          <div className="flex flex-col w-full">
+            <p className="text-bold text-small capitalize ">{user.phone_number}</p>
+          </div>
+        );
         case "status":
-          return onlineUsers.map((user) => user.id).includes(user.id) ? (
+          return onlineUsers.map((user :any) => user.id).includes(user.id) ? (
             <Chip className="capitalize font-semibold " color="success"  size="md" variant="flat">
-              YES
+              {onlineUsers.filter((on : any)=> on.id === user.id)[0].online_at.split("T")[1].slice(0,5)}
             </Chip>
           ) : ( 
             <Chip className="capitalize font-semibold " color="danger" size="md" variant="flat">
               NO
             </Chip>
           );
+          case "action":
+          return(
+            <div className="flex gap-2 w-full justify-start">
+              <Button isIconOnly onClick={()=>{Delete(user.id)}} variant="light" ><MdDelete size={20} className="text-dark_green"/></Button>
+              <Button isIconOnly onClick={()=>{
+                setId(user.id)
+                onOpenChange()
+              }} variant="light" ><FiEdit3 size={20} className="text-dark_grey"/></Button>
+            </div>
+          )
       default:
         return cellValue;
     }
-  }, [onlineUsers]);
+  }, [Delete, onOpenChange, onlineUsers]);
 
   const onNextPage = useCallback(() => {
     if (page < pages) {
@@ -297,7 +331,8 @@ export default function UserTable() {
 
   return (
     <> 
-    <AddModal isOpen={isOpen2} onOpenChange={onOpenChange2} />
+    <AddModal setUsers={setUsers} isOpen={isOpen2} onOpenChange={onOpenChange2} />
+    <EditModal isOpen={isOpen} onOpenChange={onOpenChange} users={users} setUsers={setUsers} id={id}/>
     <Table
       isHeaderSticky
       aria-label="Example table with custom cells, pagination and sorting"

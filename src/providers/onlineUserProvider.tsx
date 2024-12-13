@@ -4,12 +4,8 @@ import { useSession } from 'next-auth/react';
 import { useSupabase } from '@/providers/SupaBaseProvider';
 
 
-type user = {
-    id: number
-    name : string
-}
 
-const onlineUserContext = createContext<{onlineUsers : user[], isLoading : boolean}>({onlineUsers: [], isLoading: false})
+const onlineUserContext = createContext<{onlineUsers : {online_at : string,id : number, name : string}[], isLoading : boolean}>({onlineUsers: [], isLoading: false})
 
 export function useOnlineUsers(){
     const context = useContext(onlineUserContext)
@@ -22,16 +18,16 @@ export function useOnlineUsers(){
 export default function OnlineUsersProvider({children}:{children:React.ReactNode}) {
     const {data:session} = useSession()
     const supabase = useSupabase()
-    const [onlineUsers, setOnlineUsers] = useState<user[]>([]);
+    const [onlineUsers, setOnlineUsers] = useState<{online_at : string,id : number, name : string}[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(()=>{
         if(!supabase || !session) return
         const channel = supabase.channel('onlineTraker')
         channel.on('presence', { event: 'sync' }, () => {
-            const users:user[] = []
+            const users:{online_at : string,id : number, name : string}[] = []
             for(const id in channel.presenceState()){
-                const user:user = channel.presenceState()[id][0] as any
+                const user:{online_at : string,id : number, name : string} = channel.presenceState()[id][0] as any
                 // if(user.id === session.user.id) continue
                 
                 let userIn = false

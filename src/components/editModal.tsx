@@ -1,29 +1,47 @@
 "use client";
-import { AddUser } from "@/actions/image.actions";
-import {Modal,ModalContent,ModalHeader,ModalBody,Button, Select, SelectItem, Input} from "@nextui-org/react";
-import {  SetStateAction, useState } from "react";
-import Image from "next/image";
-import { toast } from "react-toastify";
-import { CiImageOn } from "react-icons/ci";
-import { User } from "@/types/types";
-  
-export default function AddModal({isOpen ,onOpenChange,setUsers}:{isOpen : boolean,onOpenChange : ()=>void,setUsers :React.Dispatch<SetStateAction<User[]>>}) {
 
-    const [newUser , setNewUser] = useState<{first_name: string; last_name: string; image: string | null , role : string , phone_number : string , email : string}>({
-        first_name: "",
-        last_name: "",
-        image: null,
-        role : "",
-        phone_number : "",
-        email : "",
-    });
-    const [loading, setLoading] = useState(false);
-    const [error,setError] = useState(false);
+import {Modal,ModalContent,ModalHeader,ModalBody,Button, Select, SelectItem, Input} from "@nextui-org/react";
+import {  SetStateAction, useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { User } from "@/types/types";
+import { edit_user } from "@/actions/image.actions";
+  
+export default function EditModal({isOpen ,onOpenChange,id,setUsers,users}:{isOpen : boolean,onOpenChange : ()=>void,id :number ,setUsers :React.Dispatch<SetStateAction<User[]>>,users : User[]}) {
+
+    const user = users.find((user) => user.id === id);
+    const [newUser, setNewUser] = useState(() => ({
+        first_name: user?.first_name || "",
+        last_name: user?.last_name || "",
+        role: user?.role || "",
+        phone_number: user?.phone_number || "",
+        email: user?.email || "",
+        id: user?.id || 0,
+      }));
+    
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(false);
+    
+      // Reset `newUser` when `id` or `users` change
+      if (user && newUser.id !== user.id) {
+        setNewUser({
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          phone_number: user.phone_number,
+          email: user.email,
+          id: user.id,
+        });
+      }
+
+    if(!user) return
+
+    console.log(user)
+    console.log("userina",newUser)
 
     const addUser = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
       
-        if (!newUser.first_name || !newUser.last_name || !newUser.image || !newUser.role || !newUser.phone_number || !newUser.email) {
+        if (!newUser.first_name || !newUser.last_name  || !newUser.role || !newUser.phone_number || !newUser.email) {
           toast.error("All fields are required!");
           setError(true);
           return;
@@ -36,15 +54,14 @@ export default function AddModal({isOpen ,onOpenChange,setUsers}:{isOpen : boole
         setError(false)
         setLoading(true);
         try {
-          const response : any = await AddUser(newUser); 
+          const response = await edit_user(newUser); 
           console.log(response);
           if (response?.status === "success") {
-            toast.success("User added successfully!");
-            console.log(response.data[0].id)
-            setUsers(prev => [...prev , {...newUser,id : response.data[0].id , image : undefined }]);
-            setNewUser({ first_name: "", last_name: "", image: null , phone_number : "", email : "" , role :"" }); 
-            onOpenChange();
+            setUsers(prev => prev.map((user) => user.id === newUser.id ? { ...user, ...newUser } : user));
             setLoading(false);
+            toast.success("User added successfully!");
+            setNewUser({ first_name: "", last_name: "", role :"", phone_number : "", email : "" ,id : 0}); 
+            onOpenChange();
           } else {
             toast.warning("Unexpected response from server.");
             setLoading(false);
@@ -121,37 +138,13 @@ export default function AddModal({isOpen ,onOpenChange,setUsers}:{isOpen : boole
                                         <SelectItem key={"user"}>User</SelectItem>
                                         <SelectItem key={"admin"}>Admin</SelectItem>
                                     </Select>
-                                    {
-                                    newUser.image ? <div className="flex justify-center items-center p-4 border rounded-md">
-                                        <Image src={newUser.image} alt="image" width={100} height={100}/>
-                                    </div> : null
-                                    }
-                                    <label className="w-full p-4 flex justify-center items-center shadow-sm rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer border-2 hover:border-foreground-400 mb-4">
-                                    <CiImageOn size={34} className="text-foreground-600" />
-                                    <span className="ml-2 text-foreground-600 ">Add Image</span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e)=>{
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            const reader = new FileReader();
-                                            reader.onload = () => {
-                                            setNewUser({ ...newUser, image: reader.result as string });
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }
-                                        }}
-                                    />
-                                    </label>
                                     <Button
                                     isDisabled={loading}
                                     isLoading={loading}
                                     type="submit"
                                     className="w-full bg-dark_green text-yellow py-2 rounded-xl "
                                     >
-                                    Add User
+                                    Edit User
                                     </Button>
                                 </form>
                             </div>
